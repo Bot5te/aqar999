@@ -11,6 +11,14 @@ This is a comprehensive real estate web application for Saudi Arabian properties
 - **Enhanced Form Validation Feedback**: Added better error handling for property form submission with user-friendly toast notifications when validation fails
 - **Improved Admin Form Experience**: Added console logging for debugging form submission issues and validation errors
 
+### Property Form Fixes
+- **Fixed Property Save Issue**: Resolved validation error that prevented property creation when images were added
+  - Made `images` field optional in property form schema since it's handled separately in component state
+  - Removed `images` from form defaultValues to avoid validation conflicts
+- **Increased Upload Limit**: Raised Express body parser limit from 100KB to 50MB to support base64-encoded images
+  - Prevents "PayloadTooLargeError" when uploading property images
+  - Allows multiple high-quality images per property
+
 ### Property Display Updates
 - Modified property cards to display only property size (square meters) without bedroom/bathroom counts
 - Standardized schema: `size` field for property area in m², `area` field for geographic location
