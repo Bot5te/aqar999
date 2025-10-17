@@ -202,6 +202,10 @@ export default function PropertyForm() {
   
   // Handle form submission
   const onSubmit = (values: PropertyFormValues) => {
+    // Log form values for debugging
+    console.log("Form submission attempted with values:", values);
+    console.log("Form errors:", form.formState.errors);
+    
     // Make sure we have at least one image
     if (images.length === 0) {
       toast({
@@ -216,6 +220,16 @@ export default function PropertyForm() {
     } else {
       createMutation.mutate(values);
     }
+  };
+  
+  // Handle invalid form submission
+  const onInvalidSubmit = (errors: any) => {
+    console.log("Form validation errors:", errors);
+    toast({
+      title: "يرجى التحقق من البيانات المدخلة",
+      description: "هناك حقول مطلوبة لم يتم ملؤها بشكل صحيح",
+      variant: "destructive",
+    });
   };
   
   // Show loading skeleton when fetching data
@@ -263,7 +277,7 @@ export default function PropertyForm() {
         <Card>
           <CardContent className="p-8">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <form onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)} className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Basic Information */}
                   <div className="md:col-span-2">
