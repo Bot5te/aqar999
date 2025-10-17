@@ -6,6 +6,11 @@ This is a comprehensive real estate web application for Saudi Arabian properties
 
 ## Recent Changes (October 17, 2025)
 
+### UI/UX Improvements
+- **Fixed Input Text Visibility Issue**: Added explicit `text-foreground` class to Input component to ensure text is visible in all input fields, especially in filter fields (price range, area range)
+- **Enhanced Form Validation Feedback**: Added better error handling for property form submission with user-friendly toast notifications when validation fails
+- **Improved Admin Form Experience**: Added console logging for debugging form submission issues and validation errors
+
 ### Property Display Updates
 - Modified property cards to display only property size (square meters) without bedroom/bathroom counts
 - Standardized schema: `size` field for property area in m², `area` field for geographic location
