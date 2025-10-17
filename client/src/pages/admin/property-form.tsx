@@ -46,6 +46,7 @@ const propertyFormSchema = insertPropertySchema.extend({
   type: z.string().min(1, "يرجى اختيار نوع العقار"),
   price: z.coerce.number().min(1, "يرجى إدخال السعر"),
   size: z.coerce.number().min(1, "يرجى إدخال المساحة"),
+  images: z.array(z.string()).optional(), // Make images optional since it's handled separately
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -99,7 +100,6 @@ export default function PropertyForm() {
       bathrooms: 0,
       size: 0,
       features: [],
-      images: [],
       status: "available",
       propertyCode: createPropertyCode(),
     },
@@ -111,12 +111,11 @@ export default function PropertyForm() {
       // Cast to any to avoid TypeScript errors with dynamic properties
       const propertyData = property as any;
       
-      // First reset the form
-      form.reset({
-        ...property,
-        features: [],
-        images: [],
-      });
+      // Create form data without features and images (handled separately)
+      const { features: _, images: __, ...formData } = property;
+      
+      // Reset the form with property data
+      form.reset(formData);
       
       // Set features and images separately
       setFeatures(propertyData.features || []);
