@@ -19,12 +19,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize MongoDB storage
   await storage.initialize();
 
+  // Trust proxy for Render deployment
+  if (process.env.NODE_ENV === "production") {
+    app.set('trust proxy', 1);
+  }
+
   // Set up session middleware
   app.use(session({
     secret: process.env.SESSION_SECRET || "altakhim-secret-key",
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === "production", maxAge: 86400000 }, // 24 hours
+    cookie: { 
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 86400000, // 24 hours
+      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax'
+    },
     store: new Session({
       checkPeriod: 86400000 // prune expired entries every 24h
     })
@@ -182,6 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/properties", isAdmin, async (req, res) => {
     try {
+      log(`Creating property, user session: ${req.session?.userId}`);
       const propertyData = insertPropertySchema.parse(req.body);
       
       // Generate a unique property code if not provided
@@ -190,11 +201,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const property = await storage.createProperty(propertyData);
+      log(`Property created successfully: ${property._id}`);
       res.status(201).json(property);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        log(`Property validation error: ${error.errors[0].message}`);
         return res.status(400).json({ message: error.errors[0].message });
       }
+      log(`Property creation error: ${(error as Error).message}`);
       res.status(500).json({ message: "حدث خطأ أثناء إنشاء العقار" });
     }
   });

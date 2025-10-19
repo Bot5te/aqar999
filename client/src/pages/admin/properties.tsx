@@ -194,11 +194,12 @@ export default function Properties() {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2 space-x-reverse">
-                          <Link href={`/panel/properties/edit/${property.id}`}>
+                          <Link href={`/panel/properties/edit/${property._id || property.id}`}>
                             <Button
                               variant="outline" 
                               size="sm" 
                               className="text-primary border-primary hover:bg-primary/10 ml-2"
+                              data-testid={`button-edit-${property._id || property.id}`}
                             >
                               <i className="fas fa-edit ml-1"></i>
                               تعديل
@@ -209,12 +210,18 @@ export default function Properties() {
                             size="sm" 
                             className="text-red-600 border-red-600 hover:bg-red-50 ml-2"
                             onClick={() => setPropertyToDelete(property)}
+                            data-testid={`button-delete-${property._id || property.id}`}
                           >
                             <i className="fas fa-trash-alt ml-1"></i>
                             حذف
                           </Button>
-                          <Link href={`/property/${property.id}`} target="_blank">
-                            <Button variant="outline" size="sm" className="text-neutral-600 border-neutral-300 hover:bg-neutral-50">
+                          <Link href={`/property/${property._id || property.id}`} target="_blank">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-neutral-600 border-neutral-300 hover:bg-neutral-50"
+                              data-testid={`button-view-${property._id || property.id}`}
+                            >
                               <i className="fas fa-eye ml-1"></i>
                               عرض
                             </Button>
