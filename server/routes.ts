@@ -17,10 +17,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize MongoDB storage
   await storage.initialize();
 
-  // Trust proxy for Render deployment
-  if (process.env.NODE_ENV === "production") {
-    app.set('trust proxy', 1);
-  }
+  // Trust proxy - Always enable for Render deployment
+  // Render uses proxies, so we need this to get correct client IPs and for secure cookies
+  app.set('trust proxy', 1);
+  log(`[Session] Trust proxy enabled - NODE_ENV: ${process.env.NODE_ENV}`);
 
 
   // Set up session middleware
@@ -32,7 +32,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 86400000, // 24 hours
-      sameSite: 'lax' // Protects against CSRF attacks
+      sameSite: 'lax', // Protects against CSRF attacks
+      path: '/' // Ensure cookie is sent for all paths
     },
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
@@ -43,14 +44,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       touchAfter: 3600 // Update session every hour only if needed
     })
   };
+  
+  log(`[Session] Cookie config - secure: ${sessionConfig.cookie?.secure}, sameSite: ${sessionConfig.cookie?.sameSite}`);
 
   app.use(session(sessionConfig));
+
+  // Debug middleware to log session info
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/') && !req.path.includes('/properties/featured') && !req.path.includes('/testimonials')) {
+      const cookies = req.headers.cookie || 'no cookies';
+      const sessionId = req.session?.id || 'no session';
+      const userId = req.session?.userId || 'no userId';
+      log(`[Session Debug] ${req.method} ${req.path} - SessionID: ${sessionId}, UserID: ${userId}, Cookies: ${cookies.substring(0, 50)}...`);
+    }
+    next();
+  });
 
   // Authentication middleware
   const isAuthenticated = (req: Request, res: Response, next: Function) => {
     if (req.session && req.session.userId) {
       return next();
     }
+    log(`[isAuthenticated] Failed - Session exists: ${!!req.session}, UserID: ${req.session?.userId || 'none'}`);
     res.status(401).json({ message: "غير مصرح بالدخول" });
   };
 
@@ -64,11 +79,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const user = await storage.getUser(req.session.userId);
     if (!user || user.role !== "admin") {
-      log(`[isAdmin] Authorization failed - User not found or not admin`);
+      log(`[isAdmin] Authorization failed - User not found or not admin. User: ${user ? user.username : 'null'}, Role: ${user?.role || 'none'}`);
       return res.status(403).json({ message: "ليس لديك صلاحية للوصول" });
     }
 
-    log(`[isAdmin] Authorization successful`);
+    log(`[isAdmin] Authorization successful for user: ${user.username}`);
     next();
   };
 
