@@ -24,8 +24,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.set('trust proxy', 1);
   }
 
+
   // Set up session middleware
-  app.use(session({
+  const sessionConfig: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "altakhim-secret-key",
     resave: false,
     saveUninitialized: false,
@@ -33,12 +34,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 86400000, // 24 hours
-      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax'
+      sameSite: 'lax' // Protects against CSRF attacks
     },
     store: new Session({
       checkPeriod: 86400000 // prune expired entries every 24h
     })
-  }));
+  };
+
+  app.use(session(sessionConfig));
 
   // Authentication middleware
   const isAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -49,15 +52,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   const isAdmin = async (req: Request, res: Response, next: Function) => {
+    log(`[isAdmin] Checking authorization - Has session: ${!!req.session}, Has userId: ${!!req.session?.userId}`);
+    
     if (!req.session || !req.session.userId) {
+      log(`[isAdmin] Authorization failed - No session or userId`);
       return res.status(401).json({ message: "غير مصرح بالدخول" });
     }
 
     const user = await storage.getUser(req.session.userId);
     if (!user || user.role !== "admin") {
+      log(`[isAdmin] Authorization failed - User not found or not admin`);
       return res.status(403).json({ message: "ليس لديك صلاحية للوصول" });
     }
 
+    log(`[isAdmin] Authorization successful`);
     next();
   };
 
@@ -72,6 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       req.session.userId = user._id!.toString();
+      log(`[Login] Session created successfully - secure: ${req.session.cookie.secure}, sameSite: ${req.session.cookie.sameSite}`);
+      
       res.json({
         id: user._id,
         username: user.username,
