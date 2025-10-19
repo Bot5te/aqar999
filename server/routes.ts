@@ -4,7 +4,6 @@ import { storage } from "./storage";
 import { insertContactMessageSchema, insertPropertySchema, insertTestimonialSchema, loginSchema, propertySearchSchema } from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
-import MongoStore from "connect-mongo";
 import { log } from "./vite";
 
 declare module 'express-session' {
@@ -17,76 +16,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize MongoDB storage
   await storage.initialize();
 
-  // Trust proxy - Always enable for Render deployment
-  // Render uses proxies, so we need this to get correct client IPs and for secure cookies
-  app.set('trust proxy', 1);
-  log(`[Session] Trust proxy enabled - NODE_ENV: ${process.env.NODE_ENV}`);
-
+  // Trust proxy for Render deployment
+  if (process.env.NODE_ENV === "production") {
+    app.set('trust proxy', 1);
+  }
 
   // Set up session middleware
-  // Important: For Render deployment, we need proper session configuration
   const sessionConfig: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "altakhim-secret-key",
-    resave: false, // Don't save session if unmodified
-    saveUninitialized: false, // Don't create session until something stored
-    rolling: true, // Reset maxAge on every response
-    name: 'connect.sid', // Session cookie name
+    resave: false,
+    saveUninitialized: false,
     cookie: { 
-      secure: process.env.NODE_ENV === "production", // HTTPS only in production
-      httpOnly: true, // Prevent client-side JavaScript access
-      maxAge: 86400000, // 24 hours in milliseconds
-      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // 'none' for cross-site in production (requires secure:true)
-      path: '/' // Ensure cookie is sent for all paths
-    },
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      dbName: "real_estate",
-      collectionName: "sessions",
-      ttl: 86400, // 24 hours in seconds
-      autoRemove: 'native',
-      touchAfter: 3600 // Update session every hour only if needed
-    })
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 86400000, // 24 hours
+      sameSite: 'lax'
+    }
   };
-  
-  log(`[Session] Cookie config - secure: ${sessionConfig.cookie?.secure}, sameSite: ${sessionConfig.cookie?.sameSite}, rolling: ${sessionConfig.rolling}`);
 
   app.use(session(sessionConfig));
-
-  // Debug middleware to log session info
-  app.use((req, res, next) => {
-    if (req.path.startsWith('/api/') && !req.path.includes('/properties/featured') && !req.path.includes('/testimonials')) {
-      const cookies = req.headers.cookie || 'no cookies';
-      const sessionId = req.session?.id || 'no session';
-      const userId = req.session?.userId || 'no userId';
-      log(`[Session Debug] ${req.method} ${req.path} - SessionID: ${sessionId}, UserID: ${userId}, Cookies: ${cookies.substring(0, 50)}...`);
-    }
-    next();
-  });
 
   // Authentication middleware
   const isAuthenticated = (req: Request, res: Response, next: Function) => {
     if (req.session && req.session.userId) {
       return next();
     }
-    log(`[isAuthenticated] Failed - Session exists: ${!!req.session}, UserID: ${req.session?.userId || 'none'}`);
     res.status(401).json({ message: "غير مصرح بالدخول" });
   };
 
   const isAdmin = async (req: Request, res: Response, next: Function) => {
-    log(`[isAdmin] Checking authorization - Has session: ${!!req.session}, Has userId: ${!!req.session?.userId}`);
-    
     if (!req.session || !req.session.userId) {
-      log(`[isAdmin] Authorization failed - No session or userId`);
       return res.status(401).json({ message: "غير مصرح بالدخول" });
     }
 
     const user = await storage.getUser(req.session.userId);
     if (!user || user.role !== "admin") {
-      log(`[isAdmin] Authorization failed - User not found or not admin. User: ${user ? user.username : 'null'}, Role: ${user?.role || 'none'}`);
       return res.status(403).json({ message: "ليس لديك صلاحية للوصول" });
     }
 
-    log(`[isAdmin] Authorization successful for user: ${user.username}`);
     next();
   };
 
@@ -103,28 +70,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set user ID in session
       req.session.userId = user._id!.toString();
       
-      // Explicitly save session to ensure it persists
-      req.session.save((err) => {
-        if (err) {
-          log(`[Login] Session save error: ${err.message}`);
-          return res.status(500).json({ message: "حدث خطأ أثناء حفظ الجلسة" });
-        }
-        
-        log(`[Login] Session saved successfully - ID: ${req.session.id}, UserID: ${req.session.userId}, secure: ${req.session.cookie.secure}, sameSite: ${req.session.cookie.sameSite}`);
-        
-        res.json({
-          id: user._id,
-          username: user.username,
-          name: user.name,
-          role: user.role,
-          email: user.email
-        });
+      res.json({
+        id: user._id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        email: user.email
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors[0].message });
       }
-      log(`[Login] Error: ${error}`);
       res.status(500).json({ message: "حدث خطأ أثناء تسجيل الدخول" });
     }
   });
