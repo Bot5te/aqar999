@@ -6,20 +6,30 @@ This is a comprehensive real estate web application for Saudi Arabian properties
 
 ## Recent Changes (October 19, 2025)
 
+### Critical Session Management Fix for Multi-Device/Browser Access
+- **Persistent Session Storage**: Migrated from MemoryStore to MongoDB-based session storage (connect-mongo)
+  - Sessions now persist across server restarts and Render deployments
+  - Fixes issue where delete button stopped working after login from different devices/browsers
+  - Sessions stored in MongoDB `sessions` collection with 24-hour TTL
+  - Auto-cleanup of expired sessions via native MongoDB TTL indexes
+  
+- **Enhanced Session Configuration for Production (Render)**:
+  - `trust proxy: 1` - Always enabled (not just in production) to support Render's reverse proxy
+  - `sameSite: 'none'` in production for cross-site cookie support (with secure:true)
+  - `rolling: true` - Extends session expiry on each request
+  - Explicit `req.session.save()` after login to ensure immediate persistence
+  - Added comprehensive diagnostic logging for session debugging
+  
+- **Required Environment Variables for Production**:
+  - `NODE_ENV=production` - Enables secure cookies and sameSite='none'
+  - `SESSION_SECRET` - Cryptographic secret for session signing
+  - `MONGODB_URI` - MongoDB connection string for session storage
+
 ### Admin Dashboard Fixes
 - **Fixed Delete and View Buttons**: Corrected property ID handling in admin panel to support both MongoDB (_id) and PostgreSQL (id)
   - Updated delete mutation to use string IDs instead of converting to Number (which caused NaN errors)
   - Fixed edit, delete, and view button links to use correct property identifier
   - Added data-testid attributes for better testing support
-
-### Session and Security Improvements
-- **Secure Session Configuration**: Improved session handling for multi-device access and production deployment
-  - Set `sameSite: 'lax'` for CSRF protection across all environments
-  - Enabled `secure: true` cookies in production (HTTPS)
-  - Maintained `httpOnly: true` to protect against XSS attacks
-  - Added `trust proxy: 1` for Render deployment with reverse proxy
-  - Removed permissive CORS middleware (same-origin architecture)
-  - Added safe diagnostic logging (no session ID exposure)
 
 ### Image Gallery Enhancement
 - **Interactive Property Image Gallery**: Implemented full-featured image gallery in property details page
