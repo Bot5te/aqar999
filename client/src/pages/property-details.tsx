@@ -10,7 +10,7 @@ import { Property } from "@shared/schema";
 import translations from "@/lib/i18n";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Share2, Heart, MapPin, Badge, Calendar, Phone, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -443,6 +443,7 @@ export default function PropertyDetails() {
             className="max-w-6xl w-full h-[90vh] p-0 bg-black/95"
             onKeyDown={handleKeyDown}
           >
+            <DialogTitle className="sr-only">معرض صور العقار</DialogTitle>
             <div className="relative w-full h-full flex items-center justify-center">
               {/* Close Button */}
               <Button

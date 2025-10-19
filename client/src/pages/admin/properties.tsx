@@ -43,7 +43,7 @@ export default function Properties() {
   
   // Delete property mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       await apiRequest('DELETE', `/api/properties/${id}`);
     },
     onSuccess: () => {
@@ -72,7 +72,9 @@ export default function Properties() {
   // Handle property deletion
   const handleDelete = () => {
     if (propertyToDelete) {
-      deleteMutation.mutate(Number(propertyToDelete._id || propertyToDelete.id));
+      const id = propertyToDelete._id || propertyToDelete.id;
+      // Use string ID directly (MongoDB _id is string, PostgreSQL id is number)
+      deleteMutation.mutate(String(id));
     }
   };
   
