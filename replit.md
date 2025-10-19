@@ -12,12 +12,14 @@ This is a comprehensive real estate web application for Saudi Arabian properties
   - Fixed edit, delete, and view button links to use correct property identifier
   - Added data-testid attributes for better testing support
 
-### Production Environment Support (Render Deployment)
-- **Enhanced Session Management**: Updated session configuration for production deployment on Render
-  - Added `trust proxy` setting for reverse proxy support
-  - Updated cookie settings with `sameSite: 'none'` for cross-origin requests in production
-  - Added `httpOnly: true` for enhanced security
-  - Added logging for property creation operations to aid debugging
+### Session and Security Improvements
+- **Secure Session Configuration**: Improved session handling for multi-device access and production deployment
+  - Set `sameSite: 'lax'` for CSRF protection across all environments
+  - Enabled `secure: true` cookies in production (HTTPS)
+  - Maintained `httpOnly: true` to protect against XSS attacks
+  - Added `trust proxy: 1` for Render deployment with reverse proxy
+  - Removed permissive CORS middleware (same-origin architecture)
+  - Added safe diagnostic logging (no session ID exposure)
 
 ### Image Gallery Enhancement
 - **Interactive Property Image Gallery**: Implemented full-featured image gallery in property details page
