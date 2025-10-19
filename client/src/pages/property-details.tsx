@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import Header from "@/components/layout/header";
@@ -10,13 +10,16 @@ import { Property } from "@shared/schema";
 import translations from "@/lib/i18n";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Share2, Heart, MapPin, Badge, Calendar, Phone } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Share2, Heart, MapPin, Badge, Calendar, Phone, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PropertyDetails() {
   const params = useParams<{ id: string }>();
   const { toast } = useToast();
   const propertyId = params.id;
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Fetch property details
   const { data: property, isLoading, error } = useQuery<Property>({
@@ -84,6 +87,30 @@ export default function PropertyDetails() {
       title: "تمت الإضافة للمفضلة",
       description: "تم إضافة العقار إلى قائمة المفضلة",
     });
+  };
+
+  // Handle image gallery
+  const openGallery = (index: number) => {
+    setCurrentImageIndex(index);
+    setGalleryOpen(true);
+  };
+
+  const nextImage = () => {
+    if (property && currentImageIndex < property.images.length - 1) {
+      setCurrentImageIndex(currentImageIndex + 1);
+    }
+  };
+
+  const previousImage = () => {
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex(currentImageIndex - 1);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight') previousImage();
+    if (e.key === 'ArrowLeft') nextImage();
+    if (e.key === 'Escape') setGalleryOpen(false);
   };
 
   if (error) {
@@ -163,23 +190,46 @@ export default function PropertyDetails() {
             <div className="lg:col-span-2">
               {/* Property Gallery */}
               <div className="mb-8">
-                <div className="rounded-lg overflow-hidden">
+                <div 
+                  className="rounded-lg overflow-hidden cursor-pointer relative group"
+                  onClick={() => openGallery(0)}
+                  data-testid="image-main"
+                >
                   <img 
                     src={property.images[0]} 
                     alt={property.title} 
-                    className="w-full h-[500px] object-cover"
+                    className="w-full h-[500px] object-cover transition-transform group-hover:scale-105"
                   />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="secondary" size="lg">
+                        <i className="fas fa-search-plus ml-2"></i>
+                        عرض الصور ({property.images.length})
+                      </Button>
+                    </div>
+                  </div>
                 </div>
                 
                 {property.images.length > 1 && (
                   <div className="grid grid-cols-4 gap-4 mt-4">
-                    {property.images.slice(0, 4).map((image, index) => (
-                      <div key={index} className="rounded-lg overflow-hidden">
+                    {property.images.slice(1, 5).map((image, index) => (
+                      <div 
+                        key={index} 
+                        className="rounded-lg overflow-hidden cursor-pointer relative group"
+                        onClick={() => openGallery(index + 1)}
+                        data-testid={`image-thumbnail-${index + 1}`}
+                      >
                         <img 
                           src={image} 
-                          alt={`${property.title} - صورة ${index + 1}`} 
-                          className="w-full h-24 object-cover"
+                          alt={`${property.title} - صورة ${index + 2}`} 
+                          className="w-full h-24 object-cover transition-transform group-hover:scale-110"
                         />
+                        {index === 3 && property.images.length > 5 && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-lg">
+                            +{property.images.length - 5}
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
                       </div>
                     ))}
                   </div>
@@ -385,6 +435,88 @@ export default function PropertyDetails() {
       </div>
       
       <Footer />
+      
+      {/* Image Gallery Dialog */}
+      {property && (
+        <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+          <DialogContent 
+            className="max-w-6xl w-full h-[90vh] p-0 bg-black/95"
+            onKeyDown={handleKeyDown}
+          >
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Close Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 left-4 z-50 text-white hover:bg-white/20"
+                onClick={() => setGalleryOpen(false)}
+                data-testid="button-close-gallery"
+              >
+                <X className="h-6 w-6" />
+              </Button>
+
+              {/* Image Counter */}
+              <div className="absolute top-4 right-4 z-50 bg-black/60 text-white px-4 py-2 rounded-lg">
+                {currentImageIndex + 1} / {property.images.length}
+              </div>
+
+              {/* Previous Button */}
+              {currentImageIndex > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 h-12 w-12"
+                  onClick={previousImage}
+                  data-testid="button-previous-image"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </Button>
+              )}
+
+              {/* Next Button */}
+              {currentImageIndex < property.images.length - 1 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 h-12 w-12"
+                  onClick={nextImage}
+                  data-testid="button-next-image"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </Button>
+              )}
+
+              {/* Main Image */}
+              <img
+                src={property.images[currentImageIndex]}
+                alt={`${property.title} - صورة ${currentImageIndex + 1}`}
+                className="max-w-full max-h-full object-contain"
+                data-testid={`gallery-image-${currentImageIndex}`}
+              />
+
+              {/* Thumbnails */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex gap-2 overflow-x-auto max-w-[90%] bg-black/60 p-2 rounded-lg">
+                {property.images.map((image, index) => (
+                  <div
+                    key={index}
+                    className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden cursor-pointer border-2 transition-all ${
+                      index === currentImageIndex ? 'border-white scale-110' : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                    onClick={() => setCurrentImageIndex(index)}
+                    data-testid={`gallery-thumbnail-${index}`}
+                  >
+                    <img
+                      src={image}
+                      alt={`صورة ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
