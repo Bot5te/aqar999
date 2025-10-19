@@ -4,10 +4,8 @@ import { storage } from "./storage";
 import { insertContactMessageSchema, insertPropertySchema, insertTestimonialSchema, loginSchema, propertySearchSchema } from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
-import MemoryStore from "memorystore";
+import MongoStore from "connect-mongo";
 import { log } from "./vite";
-
-const Session = MemoryStore(session);
 
 declare module 'express-session' {
   interface SessionData {
@@ -36,8 +34,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       maxAge: 86400000, // 24 hours
       sameSite: 'lax' // Protects against CSRF attacks
     },
-    store: new Session({
-      checkPeriod: 86400000 // prune expired entries every 24h
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      dbName: "real_estate",
+      collectionName: "sessions",
+      ttl: 86400, // 24 hours in seconds
+      autoRemove: 'native',
+      touchAfter: 3600 // Update session every hour only if needed
     })
   };
 
