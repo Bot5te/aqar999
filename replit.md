@@ -4,7 +4,32 @@
 
 This is a comprehensive real estate web application for Saudi Arabian properties, featuring bilingual support (Arabic/English) with Arabic as the primary language. The platform includes a public-facing property listing site and an administrative dashboard for managing properties, contact messages, and testimonials. Built with a modern full-stack architecture, it provides property search, filtering, and detailed property views with WhatsApp integration for direct customer communication.
 
-## Recent Changes (October 17, 2025)
+## Recent Changes (October 19, 2025)
+
+### Admin Dashboard Fixes
+- **Fixed Delete and View Buttons**: Corrected property ID handling in admin panel to support both MongoDB (_id) and PostgreSQL (id)
+  - Updated delete mutation to use string IDs instead of converting to Number (which caused NaN errors)
+  - Fixed edit, delete, and view button links to use correct property identifier
+  - Added data-testid attributes for better testing support
+
+### Production Environment Support (Render Deployment)
+- **Enhanced Session Management**: Updated session configuration for production deployment on Render
+  - Added `trust proxy` setting for reverse proxy support
+  - Updated cookie settings with `sameSite: 'none'` for cross-origin requests in production
+  - Added `httpOnly: true` for enhanced security
+  - Added logging for property creation operations to aid debugging
+
+### Image Gallery Enhancement
+- **Interactive Property Image Gallery**: Implemented full-featured image gallery in property details page
+  - Click on main image or thumbnails to open full-screen gallery
+  - Navigate between images using arrow buttons or keyboard (arrow keys, Escape)
+  - Image counter showing current position (e.g., "1 / 5")
+  - Thumbnail strip at bottom for quick navigation
+  - Hover effects on images for better user feedback
+  - Accessibility improvements with DialogTitle for screen readers
+  - Responsive design with proper mobile support
+
+## Previous Changes (October 17, 2025)
 
 ### UI/UX Improvements
 - **Fixed Input Text Visibility Issue**: Added explicit `text-foreground` class to Input component to ensure text is visible in all input fields, especially in filter fields (price range, area range)
