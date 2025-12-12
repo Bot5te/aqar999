@@ -93,8 +93,8 @@ export class MongoStorage implements IStorage {
   private async seedData(): Promise<void> {
     // Create default admin user
     await this.createUser({
-      username: "admin",
-      password: "admin123",
+      username: "aqarpanel",
+      password: "Mm345",
       name: "مدير النظام",
       role: "admin",
       email: "admin@altakhim.com",
