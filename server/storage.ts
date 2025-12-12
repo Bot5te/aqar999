@@ -94,7 +94,7 @@ export class MongoStorage implements IStorage {
     // Create default admin user
     await this.createUser({
       username: "aqarpanel",
-      password: "Mm345",
+      password: "Mm3456",
       name: "مدير النظام",
       role: "admin",
       email: "admin@altakhim.com",
